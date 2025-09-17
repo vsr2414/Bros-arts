@@ -1,0 +1,592 @@
+// The movie newton night
+//
+//
+
+#include <stdio.h>
+#include <math.h>
+
+#define MAX_ITER 1000
+#define EPSILON pow(10,-4)
+
+double f(double x){
+    return x*x - 4;
+}
+double df(double x){
+    return 2*x;
+}
+
+int digits(double error){
+    return (int)(2 - log10(2*error/100));
+}
+
+int main(){
+    double
+        x_prev = 6,
+        error = 1,
+        x_0;
+
+    printf("ITER\t\tX\tError\tSig.DIGITS\n");
+    for(int i = 1;error > EPSILON && i < MAX_ITER; i++){
+        x_0 = x_prev - f(x_prev)/df(x_prev);
+        error = fabs((x_0 - x_prev)/x_0)*100;
+        x_prev = x_0;
+        printf("%i\t\t%3.3lf\t%3.3lf\t%i\n",i,x_0,error,digits(error));
+    }
+
+    return 0;
+}
+
+//The movie gauss night
+//
+//
+
+#include <stdio.h>
+#include <math.h>
+
+#define N 3
+double A[N][N] = {
+    {25,5,1},
+    {64,8,1},
+    {144,12,1}
+};
+
+double b[N] = {
+    106.8,
+    177.2,
+    279.2
+};
+
+double x[N];
+
+void printMatrix(double M[N][N]){
+    printf("\n");
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            printf("%6.4f ", M[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+void printVector(double v[N]){
+    printf("\n");
+    for (int i = 0; i < N; i++) {
+        printf("%6.4f\n", v[i]);
+    }
+}
+
+int main(){
+    //Forward elimination
+    for(int i=0;i<N;i++){
+        for(int j=i+1;j<N;j++){
+            double ratio = A[j][i] / A[i][i];
+            for(int k=0;k<N;k++){
+                A[j][k] -= ratio * A[i][k];
+            }
+            b[j] -= b[i]*ratio;
+        }
+    }
+    
+    //Backword subsitution
+    for(int i=N-1;i>=0;i--){
+        x[i] = b[i];
+        for(int j=i+1;j<N;j++){
+            x[i] -= A[i][j] * x[j];
+        }
+        x[i] /= A[i][i];
+    }
+
+    printVector(x);
+
+    return 0;
+}
+
+
+// The movie jacobi night
+//
+//
+
+#include <stdio.h>
+#include <math.h>
+#include <stdbool.h>
+#define N 4
+#define EPSILON 1e-4
+double 
+    A[N][N] = {
+        {4 , 1, -2,  2},
+        {1 , 2,  0,  1},
+        {-2, 0,  3, -2},
+        {2 , 1, -2, -1}
+    },
+    V[N][N] = {
+        {1, 0, 0, 0},
+        {0, 1, 0, 0},
+        {0, 0, 1, 0},
+        {0, 0, 0, 1}
+    },
+    t,
+    c,
+    s;
+    
+int p,
+    q;
+
+void printMatrix(char*txt,double matrix[N][N]) {
+    printf("\t%s\n",txt);
+    for (int i = 0; i < N; i++) {
+        printf("\t");
+        for (int j = 0; j < N; j++) {
+            printf("%8.4f ", matrix[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+bool converged(){
+    double total = 0.0;
+    for(int i=0;i<N;i++){
+        for(int j=0;j<i;j++){
+            total += pow(A[i][j],2)*2;
+        }
+    }
+    // printf("sqrt of total = %lf\n",sqrt(total));
+    return sqrt(total) < EPSILON;
+}
+
+void find_pivot(){
+    double max = 0.0;
+    for(int i=0;i<N;i++){
+        for(int j=0;j<i;j++){
+            if(fabs(A[i][j]) > max){
+                max = fabs(A[i][j]);
+                p = i;
+                q = j;
+            }
+        }
+    }
+}
+
+void compute_angles(){
+    double tau = (A[q][q] - A[p][p])/(2*A[p][q]);
+    if (tau>=0.0){
+        t = 1.0 / (fabs(tau) + sqrt(1 + pow(tau,2)));
+    }else{
+        t = -1.0 / (fabs(tau) + sqrt(1 + pow(tau,2)));
+    }
+
+    c = 1.0/sqrt(1+pow(t,2));
+    s = c*t;
+}
+
+void jacobi_rotation(){
+    double
+        A_dash_pp,
+        A_dash_qq,
+        A_dash_pq,
+        c_2 = pow(c,2),
+        s_2 = pow(s,2),
+        sc2 = c*s*2;
+
+    A_dash_pp = c_2*A[p][p] - sc2*A[p][q] + s_2*A[q][q];
+    A_dash_qq = s_2*A[p][p] + sc2*A[p][q] + c_2*A[q][q];
+    A_dash_pq = 0.0;
+
+    A[p][p] = A_dash_pp;
+    A[q][q] = A_dash_qq;
+    A[p][q] = A[q][p] = A_dash_pq;
+
+    double 
+        A_dash_ip,
+        A_dash_iq;
+    for(int i=0;i<N;i++){
+        if(i!=p && i!=q){
+            A_dash_ip = c*A[i][p] - s*A[i][q];
+            A_dash_iq = s*A[i][p] + c*A[i][q];
+            A[i][p] = A[p][i] = A_dash_ip;
+            A[i][q] = A[q][i] = A_dash_iq;
+        }
+    }
+}
+
+void compute_V(){
+    // Make a copy of V
+    double temp[N][N] = {0};
+    for(int i=0;i<N;i++){
+         for(int j=0;j<N;j++){
+             temp[i][j] = V[i][j];
+         }
+    }
+    //  Update V
+    for(int i=0;i<N;i++){
+        V[i][p] = c*temp[i][p] - s*temp[i][q];
+        V[i][q] = s*temp[i][p] + c*temp[i][q];
+    }
+
+}
+
+int main(){
+    printf("Jacobi Method with no J matrix calculation\n");
+    while(!converged()){
+        find_pivot(); // Step 1: Find pivot
+        compute_angles(); // Step 2
+        jacobi_rotation(); // Step 3
+        compute_V(); //Step 4
+    }
+    printMatrix(A );
+    printMatrix(V );
+}
+
+
+// The movie householder night
+//
+//
+
+#include <stdio.h>
+#include <math.h>
+#include <stdbool.h>
+#define N 4
+double 
+    A[N][N] = {
+        {4 , 1, -2,  2},
+        {1 , 2,  0,  1},
+        {-2, 0,  3, -2},
+        {2 , 1, -2, -1}
+    };
+const double
+    I[N][N] = {
+        {1, 0, 0, 0},
+        {0, 1, 0, 0},
+        {0, 0, 1, 0},
+        {0, 0, 0, 1}
+    };
+
+void printMatrix(double matrix[N][N]) {
+    printf("\n");
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            printf("%8.4f ", matrix[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+int main(){
+    for(int i=0;i<N-2;i++){
+        // Step 1: Get X[] and fill values
+        double X[N] = {0};
+        for(int j=i+1;j<N;j++){
+            X[j] = A[j][i];
+        }
+
+        // Step 2: V = X + (alpha).e
+        // alpha = sign(x[i+1]) * norm_x
+        double 
+            norm_x = 0,
+            e[N] = {0};
+        e[i+1] = 1;
+        for(int j=0;j<N;j++){
+            norm_x += pow(X[j],2);
+        }
+        norm_x = sqrt(norm_x);
+        double alpha = copysign(norm_x,X[i+1]);
+        double V[N] = {0};
+        for(int j=0;j<N;j++){
+            V[j] = X[j] + alpha*e[j];
+        }
+
+        // Step 3: Computer U = V/||V||
+        double norm_v = 0;
+        for(int j=0;j<N;j++){
+            norm_v += pow(V[j],2);
+        }
+        norm_v = sqrt(norm_v);
+        double U[N] = {0};
+        for(int j=0;j<N;j++){
+            U[j] = V[j]/norm_v;
+        }
+        
+        // Step 4: Compute H = [I] - 2*[U][UT]
+        double UUT[N][N] = {0};
+        for(int j=0;j<N;j++){
+            for(int k=0;k<N;k++){
+                UUT[j][k] += U[j]*U[k];
+            }
+        }
+
+        double H[N][N];
+        for(int j=0;j<N;j++){
+            for(int k=0;k<N;k++){
+                H[j][k] = I[j][k] - 2*UUT[j][k];
+            }
+        }
+
+        // Step 5: A = HAH
+        /**
+         * B = HA
+         * A' = BH
+         */
+        double B[N][N] = {0};
+        for(int j=0;j<N;j++){
+            for(int k=0;k<N;k++){
+                double sum = 0.0;
+                for(int l=0;l<N;l++){
+                    sum += H[j][l] * A[l][k];
+                }
+                B[j][k] = sum;
+            }
+        }
+        for(int j=0;j<N;j++){
+            for(int k=0;k<N;k++){
+                double sum = 0.0;
+                for(int l=0;l<N;l++){
+                    sum += B[j][l] * H[l][k];
+                }
+                A[j][k] = sum;
+            }
+        }
+    }
+    printMatrix(A);
+}
+
+
+// The movie cholesky night
+//
+//
+
+#include <stdio.h>
+#include <math.h>
+
+#define N 3
+
+double A[N][N] = {
+    {4, 12, -16},
+    {12, 37, -43},
+    {-16, -43, 98}
+};
+double X[N];
+double B[N] = {1, 2, 3};
+
+double L[N][N] = {0};
+double Z[N] = {0};
+
+void printMatrix(double matrix[N]) {
+    printf("\n");
+    for (int i = 0; i < N; i++) {
+        printf("%3.3lf\n",matrix[i]);
+    }
+}
+
+
+
+int main(){
+    for(int i=0;i<N;i++){
+        for(int j=0;j<=i;j++){
+            double sum = 0;
+            for(int k=0;k<j;k++){
+                sum += L[i][k] * L[j][k];
+            }
+
+            if(i==j){
+                L[i][j] = sqrt(A[i][i] - sum);
+            }else{
+                L[i][j] = (A[i][j] - sum)/L[j][j];
+            }
+        }
+    }
+    
+    // [L]x[Z] = [B]
+    for(int i=0;i<N;i++){
+        Z[i] = B[i];
+        for(int j=0;j<i;j++){
+            Z[i] -= Z[j] * L[i][j];
+        }
+        Z[i] /= L[i][i];
+    }
+
+    // [LT]x[X] = [Z]
+    for(int i=N-1;i>=0;i--){
+        X[i] = Z[i];
+        for(int j=i+1;j<N;j++){
+            X[i] -= X[j] * L[j][i];
+        }
+        X[i] /= L[i][i];
+    }
+
+    printMatrix(X);
+
+    return 0;
+}
+
+
+// The movie LU night
+//
+//
+
+#include <stdio.h>
+#include <math.h>
+
+#define N 3
+
+double A[N][N] = {
+    {25,5,1},
+    {64,8,1},
+    {144,12,1}
+};
+
+double b[N] = {
+    106.8,
+    177.2,
+    279.2
+};
+
+double Z[N];
+double L[N][N] = {{0}};
+double X[N];
+
+
+void printMatrix(double matrix[N][N]) {
+    printf("\n");
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            printf("%8.2f ", matrix[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+void printVector(double vector[N]) {
+    printf("\n");
+    for (int i = 0; i < N; i++) {
+        printf("%8.2f ", vector[i]);
+    }
+    printf("\n");
+}
+
+int main(){
+    for(int i=0;i<N;i++){
+        L[i][i] = 1;
+        for(int j=i+1;j<N;j++){
+            double ratio = A[j][i] / A[i][i];
+            for(int k=0;k<N;k++){
+                A[j][k] -= ratio*A[i][k];
+            }
+            L[j][i] = ratio;
+        }
+    }
+
+
+    // [L] x [Z] = [b]
+    for(int i=0;i<N;i++){
+        Z[i] = b[i];
+        for(int j=0;j<i;j++){
+            Z[i] -= Z[j] * L[i][j];
+        }
+        Z[i] /= L[i][i];
+    }
+
+
+    // [U] * [X] = [Z]
+    for(int i = N-1;i>=0;i--){
+        X[i] = Z[i];
+        for(int j = i+1;j<N;j++){
+            X[i] -= X[j] * A[i][j]; 
+        }
+        X[i] /= A[i][i];
+    }
+    
+    
+    printVector(X);
+
+}
+
+
+// The movie secant night
+//
+//
+
+#include <stdio.h>
+#include <math.h>
+
+#define MAX_ITER 1000
+#define TOLERANCE 1e-7
+
+double f(double x){
+    return x*x - 4;
+}
+
+int digits(double e){
+    return (int)(2-log10(2*e/100));
+}
+
+int main(){
+    double
+        x_prev = 6,
+        x_current = 7,
+        x_next,
+        error = 1;
+
+    printf("ITER\t\tX\tError\tDigits\n");
+    for(int i=0;i<MAX_ITER && error > TOLERANCE;i++){
+        x_next = x_current - f(x_current) * ((x_current - x_prev) / (f(x_current)-f(x_prev)));
+        error = fabs((x_next - x_current)/x_next)*100;
+        printf("%i\t\t%3.3lf\t%3.3lf\t%i\n",i,x_next,error,digits(error));
+        x_prev = x_current;
+        x_current = x_next;
+    }
+
+}
+
+
+// The movie bisection night
+//
+//
+
+#include <stdio.h>
+#include <math.h>
+
+#define EPSILON pow(10,-4)
+#define MAX_ITER 1000
+
+double f(double x){
+    return x*x - 4;
+}
+
+int digits(double error){
+    return (int)(2 - log10(2*error/100));
+}
+
+int main(){
+    double 
+        x_a = 6,
+        x_b = 1,
+        error = 1,
+        x_m,
+        x_prev;
+
+
+    if (f(x_a) * f(x_b) > 0){
+        printf("Change boundery\n");
+        return 1;
+    }
+
+    printf("ITER\t\tX\tError\tSIG.DIGITS\n");
+    for(int i=0;i<MAX_ITER && error > EPSILON;i++){
+        x_m = (x_a + x_b) / 2;
+        if (f(x_a) * f(x_m) < 0){
+            x_b = x_m;
+        }else{
+            x_a = x_m; 
+        }
+
+        if(i>0){
+            error = fabs((x_m - x_prev)/x_m) * 100;
+            printf("%i\t\t%3.3lf\t%3.3lf\t%i\n",i,x_m,error,digits(error));
+        }else{
+            printf("%i\t\t%3.3lf\t------\t-----\n",i,x_m);
+        }
+
+        x_prev = x_m;
+    }
+    return 0;
+
+}
