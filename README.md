@@ -62,10 +62,10 @@
 ## 🤝 Connect With Me
 
 <p align="center">
-  <a href="https://www.linkedin.com/in/m-macri/" target="_blank">
+  <a href="https://www.linkedin.com/in/visitha-/" target="_blank">
     <img src="https://img.shields.io/badge/LinkedIn-blue?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn">
   </a>
-  <a href="https://github.com/MatthewMacri" target="_blank">
+  <a href="https://github.com/vsr2414" target="_blank">
     <img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub">
   </a>
 </p>
