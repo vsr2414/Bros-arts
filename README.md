@@ -1,2 +1,0 @@
-# Bros-arts
-own directories
