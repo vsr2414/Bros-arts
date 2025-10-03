@@ -36,7 +36,7 @@ int main(){
     return 0;
 }
 
-//The movie gauss night
+//The movie gauss nights
 //
 //
 
@@ -102,7 +102,7 @@ int main(){
 }
 
 
-// The movie jacobi night
+// The movie jacobi nights
 //
 //
 
@@ -418,7 +418,7 @@ int main(){
 }
 
 
-// The movie LU night
+// The movie LU nights
 //
 //
 
