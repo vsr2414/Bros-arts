@@ -1,0 +1,436 @@
+<script>
+    /* Optional: Add any JavaScript functionality if needed
+
+    <div class="navbar">
+    <div class="left center">
+        <a href="<?= BASE_URL ?>/">
+            <img src="<?= ASSET_PATH ?>/logoDark.png" alt="logo" style="height: 2rem; margin: 0 0.5rem;">
+        </a>
+        <a href="<?= BASE_URL ?>/" class="text-24 text-white" style="text-decoration: none;">SideQuest</a>
+    </div>
+
+    <?php
+    $current_page = basename($_SERVER['REQUEST_URI']);
+    ?>
+
+    <div class="middle text-white">
+        <ul class="list-inline text-18" style="gap: 1.5rem; display: flex; list-style: none; padding: 0; margin: 0;">
+            <?php if ($authModule->isLoggedIn()) { ?>
+                <li class="<?= $current_page == 'dashboard' ? 'active' : '' ?>">
+                    <a href="<?= BASE_URL ?>/dashboard/">Dashboard</a>
+                </li>
+                <li class="<?= $current_page == 'search' ? 'active' : '' ?>">
+                    <a href="<?= BASE_URL ?>/search/">Browse Jobs</a>
+                </li>
+                <li class="<?= $current_page == 'profile' ? 'active' : '' ?>">
+                    <a href="<?= BASE_URL ?>/profile/">My Profile</a>
+                </li>
+            <?php } ?>
+        </ul>
+    </div>
+
+    <div class="right">
+        <?php
+        if ($authModule->isLoggedIn()) {
+        ?>
+            <a class="btn-round" href="<?= BASE_URL ?>/messaging" style="margin-right: 0.25rem"><i class="fas fa-envelope" style="margin-right: 0"></i></a>
+            <a class="btn-round" href="<?= BASE_URL ?>/notification" style="margin-right: 0.25rem"><i class="fas fa-bell" style="margin-right: 0"></i></a>
+            <button onclick="openProfileMenu()" class="btn-round"><i class="fas fa-user" style="margin-right: 0"></i></button>
+
+            <div class="profile-menu-overlay" id="profileMenuOverlay" hidden>
+                <div class="profile-menu-panel" id="profileMenu">
+                    <div class="profile-menu">
+                        <div class="profile-menu-header">
+                            <div class="space-between">
+                                <div>
+                                    <h1 class="text-18 text-weight-header">
+                                        <?= $authModule->getUsername(); ?>
+                                    </h1>
+                                    <span class="badge text-12" style="text-transform: capitalize; font-weight: 500"><?= $authModule->getUserType() ?></span>
+                                </div>
+                                <img src="<?= BASE_URL . $authModule->getProfileImage(); ?>" width="70" height="70" class="profilePhoto">
+                            </div>
+                        </div>
+                        <div class="profile-menu-items">
+                            <a href="<?= BASE_URL ?>/profile/"><i class="fa-solid fa-fw fa-user"></i>My Profile</a>
+                            <a href="<?= BASE_URL ?>/dashboard/"><i class="fa-solid fa-fw fa-house"></i>Dashboard</a>
+                            <a href="<?= BASE_URL ?>/contract/myOffers/"><i class="fa-solid fa-fw fa-file-contract"></i>My Offers</a>
+
+                            <?php if ($authModule->getUserType() == "student") { ?>
+                                <a href="<?= BASE_URL ?>/listing/bookmarks/"><i class="fa-solid fa-fw fa-bookmark"></i>Bookmarks</a>
+                            <?php } ?>
+
+                            <a href="<?= BASE_URL ?>/account/settings"><i class="fa-solid fa-fw fa-gear"></i>Settings</a>
+                            <button onclick="location.href='<?= BASE_URL ?>/account/logout'"><i class="fa-solid fa-fw fa-arrow-right-from-bracket"></i>Sign out</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        <?php
+        } else {
+            echo "<a class='btn' href='" . BASE_URL . "/account/login'>Login</a>";
+        }
+        ?>
+    </div>
+</div>
+
+<script>
+    let profileMenuOverlay = document.getElementById("profileMenuOverlay");
+    let profileMenu = document.getElementById("profileMenu");
+
+    function openProfileMenu() {
+        profileMenuOverlay.hidden = false;
+    }
+
+    function closeProfileMenu() {
+        if (profileMenuOverlay.hidden) return;
+        profileMenuOverlay.hidden = true;
+    }
+
+    profileMenuOverlay.addEventListener('click', (e) => {
+        if (!profileMenu.contains(e.target)) closeProfileMenu();
+    });
+</script>    
+                                                                                                                                                                                                                                         <?php
+/*
+namespace SideQuest\Controllers;
+
+use SideQuest\Core\Controller;
+
+require_once(APP_PATH . '/models/ContractModel.php');
+
+use SideQuest\Models\ContractModel;
+
+class ContractController extends Controller {
+    private ContractModel $model;
+
+
+    public function __construct() {
+        parent::__construct();
+        $this->__controllerType = "Contract";
+        $this->model = $this->getModel("ContractModel");
+    }
+
+
+    public function index() {
+        $this->throwError(6);
+    }
+
+
+    public function newOffer($applicationID = -1) {
+        if ($applicationID == -1) {
+            $this->throwError(8);
+        }
+
+        $this->authModule->requireLogin();
+        if ($this->authModule->getUserType() != "company") {
+            $this->throwError(6);
+        }
+
+        $data = $this->model->getNewOfferData($applicationID);
+        $view = $this->getView("NewOfferView");
+        $view->addData($data);
+        $view->bgMuted();
+        $view->render();
+    }
+
+
+    public function newOfferHandler() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->throwError(6);
+        }
+
+        $this->authModule->requireLogin();
+        if ($this->authModule->getUserType() != "company") {
+            $this->throwError(6);
+        }
+
+        $offerID = $this->model->createNewOffer();
+        header("Location: " . BASE_URL . "/contract/view/" . $offerID);
+        exit;
+    }
+
+
+    public function myOffers() {
+        $this->authModule->requireLogin();
+        $userType = $this->authModule->getUserType();
+        $profileID = $this->authModule->getProfileID();
+
+        if ($userType === "student") {
+            $offers = $this->model->getOffersForStudent($profileID);
+        } elseif ($userType === "company") {
+            $offers = $this->model->getOffersForCompany($profileID);
+        } else {
+            $this->throwError(6);
+        }
+
+        $data = [
+            'offers' => $offers,
+            'userType' => $userType
+        ];
+
+        $view = $this->getView("MyOffersView");
+        $view->addData($data);
+        $view->bgMuted();
+        $view->render();
+    }
+}
+                                                                                                                                                                                                                                                      <?php
+
+namespace SideQuest\Models;
+
+use SideQuest\Core\Model;
+
+class ContractModel extends Model {
+    public function getNewOfferData($applicationID) {
+        $sql = "
+            SELECT
+                u.userID,
+                a.studentID,
+                a.listingID,
+                s.firstName as studentFirstName,
+                s.lastname as studentLastName,
+                s.locationID,
+                s.profileHeadline,
+                CONCAT(loc.province, ', ' , loc.district) AS studentLocation,
+                u.email,
+                u.profileImage AS studentProfileImage
+            FROM application a
+            INNER JOIN student s
+                On a.studentID = s.studentID
+            INNER JOIN listing l
+                ON a.listingID = l.listingID
+            INNER JOIN studentEducation e
+                ON a.studentID = e.studentID
+            INNER JOIN location loc
+                ON s.locationID = loc.locationID
+            INNER JOIN users u
+                ON s.userID = u.userID
+            WHERE a.applicationID = ?
+        ";
+
+        $stmt = $this->db_conn->prepare($sql);
+        $stmt->bind_param("i", $applicationID);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $studentData = $result->fetch_assoc();
+        $stmt->close();
+        if (!$studentData) {
+            $this->throwError(7);
+        }
+
+        $sql = "
+            SELECT
+                a.listingID,
+                c.companyID,
+                c.name AS companyName,
+                c.locationID,
+                CONCAT(loc.province, ', ' , loc.district) AS companyLocation,
+                l.jobTitle,
+                l.jobType,
+                l.salary,
+                l.flexibility,
+                u.profileImage AS companyProfileImage
+            FROM application a
+            INNER JOIN listing l
+                ON a.listingID = l.listingID
+            INNER JOIN company c
+                ON l.companyID = c.companyID
+            INNER JOIN location loc
+                ON c.locationID = loc.locationID
+            INNER JOIN users u
+                ON c.userID = u.userID
+            WHERE a.applicationID = ?
+        ";
+
+        $stmt = $this->db_conn->prepare($sql);
+        $stmt->bind_param("i", $applicationID);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $listingData = $result->fetch_assoc();
+        $stmt->close();
+        if (!$listingData) {
+            $this->throwError(7);
+        }
+
+        if ($listingData['companyID'] != $this->authModule->getProfileID()) {
+            $this->throwError(6);
+        }
+
+        return [
+            'applicationID' => $applicationID,
+            'studentData' => $studentData,
+            'listingData' => $listingData
+        ];
+    }
+    */
+/*
+
+    public function createNewOffer() {
+        $applicationID = $_POST['applicationID'];
+        $jobTitle = $_POST['jobTitle'];
+        $salary = $_POST['salary'];
+        $startDate = $_POST['startDate'];
+        $endDate = $_POST['endDate'];
+        $expiresOn = $_POST['expiresOn'] ?? "";
+        $terms = $_POST['terms'];
+        $benefits = $_POST['benefits'];
+        $companyID = $_POST['companyID'];
+        $studentID = $_POST['studentID'];
+        $listingID = $_POST['listingID'];
+        $status = "Pending";
+
+        if ($companyID != $this->authModule->getProfileID()) {
+            $this->throwError(6);
+        }
+
+        $sql = "
+            SELECT companyID FROM listing WHERE listingID = ?
+        ";
+        $stmt = $this->db_conn->prepare($sql);
+        $stmt->bind_param("i", $listingID);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $listing = $result->fetch_assoc();
+        $stmt->close();
+        if (!$listing || $listing['companyID'] != $companyID) {
+            $this->throwError(6);
+        }
+
+        $sql = "
+            SELECT listingID, studentID FROM application WHERE applicationID = ?
+        ";
+        $stmt = $this->db_conn->prepare($sql);
+        $stmt->bind_param("i", $applicationID);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $application = $result->fetch_assoc();
+        $stmt->close();
+        if (
+            !$application ||
+            $application['listingID'] != $listingID ||
+            $application['studentID'] != $studentID
+        ) {
+            $this->throwError(6);
+        }
+
+        $sql = "
+            INSERT INTO contract (
+                studentID,
+                companyID,
+                listingID,
+                salary,
+                startDate,
+                endDate,
+                jobTitle,
+                benefits,
+                terms,
+                status
+            ) VALUES (?,?,?,?,?,?,?,?,?,?)
+        ";
+        $stmt = $this->db_conn->prepare($sql);
+        $stmt->bind_param(
+            "iiiissssss",
+            $studentID,
+            $companyID,
+            $listingID,
+            $salary,
+            $startDate,
+            $endDate,
+            $jobTitle,
+            $benefits,
+            $terms,
+            $status
+        );
+
+        $stmt->execute();
+        $offerID = $stmt->insert_id;
+        $stmt->close();
+
+        if ($expiresOn != "" && strtotime($expiresOn) > time()) {
+            $sql = "
+                UPDATE contract
+                SET expiresOn = ?
+                WHERE contractID = ?
+            ";
+            $stmt = $this->db_conn->prepare($sql);
+            $stmt->bind_param("si", $expiresOn, $offerID);
+            $stmt->execute();
+            $stmt->close();
+        }
+
+        return $offerID;
+    }
+    
+    public function getOffersForStudent($profileID) {
+        $sql = "
+            SELECT
+                c.contractID,
+                c.salary,
+                c.startDate,
+                c.endDate,
+                c.status,
+                c.expiresOn,
+                c.jobTitle,
+                co.name AS companyName,
+                co.companyID,
+                u.profileImage AS companyImage
+            FROM contract c
+            INNER JOIN student s ON c.studentID = s.studentID
+            INNER JOIN company co ON c.companyID = co.companyID
+            INNER JOIN users u ON co.userID = u.userID
+            WHERE s.studentID = ?
+            ORDER BY c.expiresOn DESC
+        ";
+
+        $stmt = $this->db_conn->prepare($sql);
+        $stmt->bind_param("i", $profileID);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $offers = [];
+        while ($row = $result->fetch_assoc()) {
+            $offers[] = $row;
+        }
+        $stmt->close();
+        return $offers;
+    }
+
+
+    public function getOffersForCompany($profileID) {
+        $sql = "
+            SELECT
+                c.contractID,
+                c.salary,
+                c.startDate,
+                c.endDate,
+                c.status,
+                c.expiresOn,
+                c.jobTitle,
+                s.firstName,
+                s.lastName,
+                s.studentID,
+                u.profileImage AS studentImage,
+                ue.email
+            FROM contract c
+            INNER JOIN company co ON c.companyID = co.companyID
+            INNER JOIN student s ON c.studentID = s.studentID
+            INNER JOIN users u ON s.userID = u.userID
+            INNER JOIN users ue ON s.userID = ue.userID
+            WHERE co.companyID = ?
+            ORDER BY c.expiresOn DESC
+        ";
+
+        $stmt = $this->db_conn->prepare($sql);
+        $stmt->bind_param("i", $profileID);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $offers = [];
+        while ($row = $result->fetch_assoc()) {
+            $offers[] = $row;
+        }
+        $stmt->close();
+        return $offers;
+    }
+}
+*/
